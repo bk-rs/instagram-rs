@@ -25,6 +25,21 @@ pub fn ig_id_to_shortcode(ig_id: u64) -> String {
 
 pub fn shortcode_to_ig_id(shortcode: impl AsRef<str>) -> Result<u64, String> {
     let s = shortcode.as_ref();
+
+    if s.len() == 0 {
+        return Ok(0);
+    }
+
+    let s = if s.len() > 11 {
+        if s.len() <= 28 {
+            return Err("invalid".to_owned());
+        }
+
+        s[..s.len() - 28].to_owned()
+    } else {
+        s.to_owned()
+    };
+
     let mut s = s.replacen("-", "+", s.len()).replacen("_", "/", s.len());
 
     if s.len() < 12 {
@@ -259,6 +274,17 @@ mod tests {
         assert_eq!(shortcode_to_ig_id("B")?, 1);
         assert_eq!(ig_id_to_shortcode(u64::MAX), "P__________");
         assert_eq!(shortcode_to_ig_id("P__________")?, u64::MAX);
+
+        assert_eq!(ig_id_to_shortcode(1724590456043472323), "Bfu-eHrgAXD");
+        assert_eq!(
+            shortcode_to_ig_id("Bfu-eHrgAXDlJ8ifgkj-lm4H6_UHy5GCAzsBU80")?,
+            1724590456043472323
+        );
+        assert_eq!(ig_id_to_shortcode(2448037011284432259), "CH5LLEGnhWD");
+        assert_eq!(
+            shortcode_to_ig_id("CH5LLEGnhWDZpMs--h6rwCecLT3So9_ZOwTKCk0")?,
+            2448037011284432259
+        );
 
         Ok(())
     }
