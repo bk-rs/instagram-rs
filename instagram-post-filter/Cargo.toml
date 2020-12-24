@@ -1,0 +1,17 @@
+[package]
+name = "instagram-post-filter"
+version = "0.1.0"
+authors = ["vkill <vkill.net@gmail.com>"]
+edition = "2018"
+description = "Instagram - Post Filter"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/bk-rs/instagramapis"
+homepage = "https://github.com/bk-rs/instagramapis"
+documentation = "https://docs.rs/instagram-post-filter"
+keywords = []
+categories = []
+readme = "README.md"
+
+[dependencies]
+num_enum = "0.5"
+strum_macros = "0.20"
