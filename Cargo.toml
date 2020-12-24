@@ -2,4 +2,5 @@
 members = [
     "instagram-post-filter",
     "instagram-media-shortcode",
+    "instagram-cdn-url",
 ]
