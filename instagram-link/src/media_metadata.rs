@@ -1,6 +1,6 @@
 use instagram_media_shortcode::{ig_id_to_shortcode, is_private_shortcode, shortcode_to_ig_id};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct MediaMetadata {
     pub ig_id: u64,
     pub shortcode: String,

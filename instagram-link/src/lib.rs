@@ -148,6 +148,24 @@ impl MediaLink {
     }
 }
 
+impl MediaLink {
+    pub fn get_metadata(&self) -> &MediaMetadata {
+        match self {
+            Self::Post { metadata } => metadata,
+            Self::Story {
+                metadata,
+                owner_username: _,
+            } => metadata,
+            Self::StoryHighlight {
+                metadata,
+                highlight_id: _,
+            } => metadata,
+            Self::IGTVVideo { metadata } => metadata,
+            Self::Reel { metadata } => metadata,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
