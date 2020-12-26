@@ -8,14 +8,15 @@ pub struct CdnUrl {
     pub oe_datetime: DateTime<Utc>,
 }
 
-pub enum CdnUrlError {
+#[derive(PartialEq, Debug)]
+pub enum CdnUrlParseError {
     UrlParseError(ParseError),
     BadURLTimestamp,
     BadURLHash,
     URLSignatureMismatch,
 }
 
-impl fmt::Display for CdnUrlError {
+impl fmt::Display for CdnUrlParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::UrlParseError(err) => write!(f, "UrlParseError {}", err),
@@ -27,33 +28,34 @@ impl fmt::Display for CdnUrlError {
 }
 
 impl CdnUrl {
-    pub fn new(url: impl AsRef<str>) -> Result<Self, CdnUrlError> {
+    pub fn parse(url: impl AsRef<str>) -> Result<Self, CdnUrlParseError> {
         let url = url.as_ref();
-        let url = Url::parse(url).map_err(CdnUrlError::UrlParseError)?;
+        let url = Url::parse(url).map_err(CdnUrlParseError::UrlParseError)?;
 
         let pairs = &url.query_pairs();
 
         let (_, oe) = pairs
             .filter(|(k, _)| k == "oe")
             .next()
-            .ok_or(CdnUrlError::BadURLTimestamp)?;
+            .ok_or(CdnUrlParseError::BadURLTimestamp)?;
 
-        let oe_datetime = oe_string_to_datetime(&oe).map_err(|_| CdnUrlError::BadURLTimestamp)?;
+        let oe_datetime =
+            oe_string_to_datetime(&oe).map_err(|_| CdnUrlParseError::BadURLTimestamp)?;
 
         pairs
             .filter(|(k, _)| k == "oh")
             .next()
-            .ok_or(CdnUrlError::BadURLHash)?;
+            .ok_or(CdnUrlParseError::BadURLHash)?;
 
         pairs
             .filter(|(k, _)| k == "_nc_ohc")
             .next()
-            .ok_or(CdnUrlError::URLSignatureMismatch)?;
+            .ok_or(CdnUrlParseError::URLSignatureMismatch)?;
 
         pairs
             .filter(|(k, _)| k == "_nc_ht")
             .next()
-            .ok_or(CdnUrlError::URLSignatureMismatch)?;
+            .ok_or(CdnUrlParseError::URLSignatureMismatch)?;
 
         Ok(Self { oe_datetime })
     }
@@ -122,8 +124,8 @@ mod tests {
     }
 
     #[test]
-    fn test_cdn_url() -> Result<(), String> {
-        let cdn_url = CdnUrl::new( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=n76LD7OkqcEAX_rFqpg&tp=1&oh=b68eb21889f4d6406bea1db175f16b3b&oe=600DBA0C").map_err(|err| err.to_string())?;
+    fn test_parse() -> Result<(), String> {
+        let cdn_url = CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=n76LD7OkqcEAX_rFqpg&tp=1&oh=b68eb21889f4d6406bea1db175f16b3b&oe=600DBA0C").map_err(|err| err.to_string())?;
 
         if Utc::now()
             > DateTime::<Utc>::from_utc(
@@ -138,6 +140,46 @@ mod tests {
         } else {
             assert_eq!(cdn_url.is_url_signature_expired(), false);
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_when_missing_oe() -> Result<(), String> {
+        assert_eq!(
+            CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=n76LD7OkqcEAX_rFqpg&tp=1&oh=b68eb21889f4d6406bea1db175f16b3b&oeFOO=600DBA0C").err(),
+            Some(CdnUrlParseError::BadURLTimestamp)
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_when_missing_oh() -> Result<(), String> {
+        assert_eq!(
+            CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=n76LD7OkqcEAX_rFqpg&tp=1&ohFOO=b68eb21889f4d6406bea1db175f16b3b&oe=600DBA0C").err(),
+            Some(CdnUrlParseError::BadURLHash)
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_when_missing_nc_ohc() -> Result<(), String> {
+        assert_eq!(
+            CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohcFOO=n76LD7OkqcEAX_rFqpg&tp=1&oh=b68eb21889f4d6406bea1db175f16b3b&oe=600DBA0C").err(),
+            Some(CdnUrlParseError::URLSignatureMismatch)
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_when_missing_nc_ht() -> Result<(), String> {
+        assert_eq!(
+            CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_htFOO=scontent-lax3-1.cdninstagram.com&_nc_ohc=n76LD7OkqcEAX_rFqpg&tp=1&oh=b68eb21889f4d6406bea1db175f16b3b&oe=600DBA0C").err(),
+            Some(CdnUrlParseError::URLSignatureMismatch)
+        );
 
         Ok(())
     }
