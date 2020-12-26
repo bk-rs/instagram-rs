@@ -1,9 +1,6 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-/*
-Ref https://github.com/ping/instagram_private_api/blob/1.6.0/instagram_private_api/compatpatch.py#L10-L57
-*/
-
+/// Ref https://github.com/ping/instagram_private_api/blob/1.6.0/instagram_private_api/compatpatch.py#L10-L57
 #[derive(IntoPrimitive, TryFromPrimitive, PartialEq, Debug, Clone, strum_macros::Display)]
 #[repr(i16)]
 pub enum FilterType {

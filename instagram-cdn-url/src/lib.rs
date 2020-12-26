@@ -5,7 +5,6 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use url::{ParseError, Url};
 
 pub struct CdnUrl {
-    pub oe: String,
     pub oe_datetime: DateTime<Utc>,
 }
 
@@ -44,22 +43,19 @@ impl CdnUrl {
         pairs
             .filter(|(k, _)| k == "oh")
             .next()
-            .ok_or(CdnUrlError::BadURLTimestamp)?;
+            .ok_or(CdnUrlError::BadURLHash)?;
 
         pairs
             .filter(|(k, _)| k == "_nc_ohc")
             .next()
-            .ok_or(CdnUrlError::BadURLTimestamp)?;
+            .ok_or(CdnUrlError::URLSignatureMismatch)?;
 
         pairs
             .filter(|(k, _)| k == "_nc_ht")
             .next()
-            .ok_or(CdnUrlError::BadURLTimestamp)?;
+            .ok_or(CdnUrlError::URLSignatureMismatch)?;
 
-        Ok(Self {
-            oe: oe.to_string(),
-            oe_datetime,
-        })
+        Ok(Self { oe_datetime })
     }
 
     pub fn is_url_signature_expired(&self) -> bool {
@@ -67,10 +63,7 @@ impl CdnUrl {
     }
 }
 
-/*
-Ref https://steveridout.github.io/mongo-object-time/
-*/
-
+/// Ref https://steveridout.github.io/mongo-object-time/
 pub fn oe_string_to_datetime(oe: impl AsRef<str>) -> Result<DateTime<Utc>, String> {
     let oe_timestamp = u32::from_str_radix(oe.as_ref(), 16).map_err(|_| "invalid".to_owned())?;
 
@@ -86,7 +79,7 @@ pub fn oe_datetime_to_string(oe_datetime: DateTime<Utc>) -> String {
     to_str_radix(oe_timestamp, 16).to_uppercase()
 }
 
-// https://stackoverflow.com/questions/50277050/is-there-a-built-in-function-that-converts-a-number-to-a-string-in-any-base
+/// https://stackoverflow.com/questions/50277050/is-there-a-built-in-function-that-converts-a-number-to-a-string-in-any-base
 fn to_str_radix(n: u32, r: u32) -> String {
     let c = from_digit(n % r, r).unwrap_or('!');
     return match n / r {

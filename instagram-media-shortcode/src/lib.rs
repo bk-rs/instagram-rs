@@ -1,7 +1,6 @@
-/*
-Ref https://gist.github.com/sclark39/9daf13eea9c0b381667b61e3d2e7bc11
-*/
+const PRIVATE_LEN: usize = 28;
 
+/// Ref https://gist.github.com/sclark39/9daf13eea9c0b381667b61e3d2e7bc11
 pub fn ig_id_to_shortcode(ig_id: u64) -> String {
     if ig_id == 0 {
         return "".to_owned();
@@ -25,30 +24,22 @@ pub fn ig_id_to_shortcode(ig_id: u64) -> String {
 
 pub fn shortcode_to_ig_id(shortcode: impl AsRef<str>) -> Result<u64, String> {
     let s = shortcode.as_ref();
+    let s = private_shortcode_to_public_shortcode(s);
 
     if s.len() == 0 {
         return Ok(0);
     }
-
-    let s = if s.len() > 11 {
-        if s.len() <= 28 {
-            return Err("invalid".to_owned());
-        }
-
-        s[..s.len() - 28].to_owned()
-    } else {
-        s.to_owned()
-    };
+    if s.len() > 11 {
+        return Err("invalid".to_owned());
+    }
 
     let mut s = s.replacen("-", "+", s.len()).replacen("_", "/", s.len());
 
-    if s.len() < 12 {
-        s = format!(
-            "{}{}",
-            String::from_utf8(vec![b'A'; 12 - s.len()]).map_err(|err| err.to_string())?,
-            s
-        );
-    }
+    s = format!(
+        "{}{}",
+        String::from_utf8(vec![b'A'; 12 - s.len()]).map_err(|err| err.to_string())?,
+        s
+    );
 
     let bytes = base64::decode_config(s, base64::STANDARD).map_err(|err| err.to_string())?;
 
@@ -62,6 +53,18 @@ pub fn shortcode_to_ig_id(shortcode: impl AsRef<str>) -> Result<u64, String> {
     let mut buf = [0; 8];
     buf.copy_from_slice(&bytes[1..9]);
     Ok(u64::from_be_bytes(buf))
+}
+
+pub fn is_private_shortcode(shortcode: &str) -> bool {
+    shortcode.len() >= (1 + PRIVATE_LEN) && shortcode.len() <= (11 + PRIVATE_LEN)
+}
+
+pub fn private_shortcode_to_public_shortcode(shortcode: &str) -> String {
+    if !is_private_shortcode(shortcode) {
+        return shortcode.to_owned();
+    }
+
+    shortcode[..shortcode.len() - PRIVATE_LEN].to_owned()
 }
 
 #[cfg(test)]
@@ -268,6 +271,7 @@ mod tests {
             assert_eq!(shortcode_to_ig_id(shortcode.to_string())?, *ig_id);
         }
 
+        //
         assert_eq!(ig_id_to_shortcode(u64::MIN), "");
         assert_eq!(shortcode_to_ig_id("")?, u64::MIN);
         assert_eq!(ig_id_to_shortcode(1), "B");
@@ -275,15 +279,82 @@ mod tests {
         assert_eq!(ig_id_to_shortcode(u64::MAX), "P__________");
         assert_eq!(shortcode_to_ig_id("P__________")?, u64::MAX);
 
+        //
         assert_eq!(ig_id_to_shortcode(1724590456043472323), "Bfu-eHrgAXD");
         assert_eq!(
             shortcode_to_ig_id("Bfu-eHrgAXDlJ8ifgkj-lm4H6_UHy5GCAzsBU80")?,
             1724590456043472323
         );
+
+        //
         assert_eq!(ig_id_to_shortcode(2448037011284432259), "CH5LLEGnhWD");
         assert_eq!(
             shortcode_to_ig_id("CH5LLEGnhWDZpMs--h6rwCecLT3So9_ZOwTKCk0")?,
             2448037011284432259
+        );
+
+        //
+        assert_eq!(
+            shortcode_to_ig_id(String::from_utf8(vec![b'X'; 12]).unwrap()).err(),
+            Some("invalid".to_owned())
+        );
+        assert_eq!(
+            shortcode_to_ig_id(String::from_utf8(vec![b'X'; 28]).unwrap()).err(),
+            Some("invalid".to_owned())
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_is_private_shortcode() -> Result<(), String> {
+        for (_, shortcode) in DATA.iter() {
+            assert_eq!(is_private_shortcode(*shortcode), false);
+            assert_eq!(
+                is_private_shortcode(
+                    format!(
+                        "{}{}",
+                        shortcode,
+                        String::from_utf8(vec![b'X'; 28]).unwrap()
+                    )
+                    .as_str()
+                ),
+                true
+            );
+        }
+
+        assert_eq!(
+            is_private_shortcode("Bfu-eHrgAXDlJ8ifgkj-lm4H6_UHy5GCAzsBU80"),
+            true
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_private_shortcode_to_public_shortcode() -> Result<(), String> {
+        for (_, shortcode) in DATA.iter() {
+            assert_eq!(
+                private_shortcode_to_public_shortcode(*shortcode),
+                *shortcode
+            );
+
+            assert_eq!(
+                private_shortcode_to_public_shortcode(
+                    format!(
+                        "{}{}",
+                        shortcode,
+                        String::from_utf8(vec![b'X'; 28]).unwrap()
+                    )
+                    .as_str()
+                ),
+                *shortcode
+            );
+        }
+
+        assert_eq!(
+            private_shortcode_to_public_shortcode("Bfu-eHrgAXDlJ8ifgkj-lm4H6_UHy5GCAzsBU80"),
+            "Bfu-eHrgAXD"
         );
 
         Ok(())
