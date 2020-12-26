@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "instagram-post-filter",
-    "instagram-media-shortcode",
     "instagram-cdn-url",
+    "instagram-link",
+    "instagram-media-shortcode",
+    "instagram-post-filter",
 ]
