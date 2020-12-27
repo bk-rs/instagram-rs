@@ -61,9 +61,9 @@ impl MediaLink {
         let offset = s
             .find(|c: char| c == '/')
             .ok_or(MediaLinkParseError::Unsupported)?;
-        let path_l1: String = s.drain(..offset).collect();
+        let r#type: String = s.drain(..offset).collect();
 
-        match path_l1.as_str() {
+        match r#type.as_str() {
             "p" | "tv" | "reel" => {
                 s.remove(0);
                 let shortcode = if let Some(offset) = s.find(|c: char| c == '/') {
@@ -75,10 +75,10 @@ impl MediaLink {
                 let metadata = MediaMetadata::with_shortcode(shortcode)
                     .map_err(|_| MediaLinkParseError::Invalid("shortcode invalid".to_owned()))?;
 
-                match path_l1.as_str() {
-                    "p" => Ok(Self::Post { metadata: metadata }),
-                    "tv" => Ok(Self::IGTVVideo { metadata: metadata }),
-                    "reel" => Ok(Self::Reel { metadata: metadata }),
+                match r#type.as_str() {
+                    "p" => Ok(Self::Post { metadata }),
+                    "tv" => Ok(Self::IGTVVideo { metadata }),
+                    "reel" => Ok(Self::Reel { metadata }),
                     _ => unreachable!(),
                 }
             }
@@ -104,8 +104,8 @@ impl MediaLink {
                 let metadata = MediaMetadata::with_ig_id(ig_id);
 
                 Ok(Self::Story {
-                    metadata: metadata,
-                    owner_username: owner_username,
+                    metadata,
+                    owner_username,
                 })
             }
             "s" => {
@@ -139,8 +139,8 @@ impl MediaLink {
                 let metadata = MediaMetadata::with_ig_id(ig_id);
 
                 Ok(Self::StoryHighlight {
-                    metadata: metadata,
-                    highlight_id: highlight_id,
+                    metadata,
+                    highlight_id,
                 })
             }
             _ => Err(MediaLinkParseError::Unsupported),
