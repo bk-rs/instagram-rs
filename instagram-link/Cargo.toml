@@ -17,4 +17,4 @@ url = "2.2"
 base64 = "0.13"
 thiserror = { version = "1.0", default-features = false }
 
-instagram-media-shortcode = { version = "0.1", path = "../instagram-media-shortcode" }
+instagram-media-shortcode = { version = "=0.1.3", path = "../instagram-media-shortcode" }
