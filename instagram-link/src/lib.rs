@@ -1,5 +1,3 @@
-use std::fmt;
-
 use url::{ParseError, Url};
 
 mod media_metadata;
@@ -26,21 +24,14 @@ pub enum MediaLink {
     },
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(thiserror::Error, PartialEq, Debug)]
 pub enum MediaLinkParseError {
+    #[error("UrlParseError {0:?}")]
     UrlParseError(ParseError),
+    #[error("Invalid {0}")]
     Invalid(String),
+    #[error("Unsupported")]
     Unsupported,
-}
-
-impl fmt::Display for MediaLinkParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::UrlParseError(err) => write!(f, "UrlParseError {}", err),
-            Self::Invalid(msg) => write!(f, "Invalid {}", msg),
-            Self::Unsupported => write!(f, "Unsupported"),
-        }
-    }
 }
 
 impl MediaLink {
@@ -167,10 +158,12 @@ impl MediaLink {
 mod tests {
     use super::*;
 
+    use std::error;
+
     #[test]
-    fn test_parse_post() -> Result<(), String> {
-        let link = MediaLink::parse("https://www.instagram.com/p/CJBsZ11MYha/?igshid=ffffffffffff")
-            .map_err(|err| err.to_string())?;
+    fn test_parse_post() -> Result<(), Box<dyn error::Error>> {
+        let link =
+            MediaLink::parse("https://www.instagram.com/p/CJBsZ11MYha/?igshid=ffffffffffff")?;
         assert_eq!(
             link,
             MediaLink::Post {
@@ -182,8 +175,7 @@ mod tests {
             }
         );
 
-        let link = MediaLink::parse("https://www.instagram.com/p/CJBsZ11MYha?igshid=ffffffffffff")
-            .map_err(|err| err.to_string())?;
+        let link = MediaLink::parse("https://www.instagram.com/p/CJBsZ11MYha?igshid=ffffffffffff")?;
         assert_eq!(
             link,
             MediaLink::Post {
@@ -195,8 +187,7 @@ mod tests {
             }
         );
 
-        let link = MediaLink::parse("https://www.instagram.com/p/CH5LLEGnhWDZpMs--h6rwCecLT3So9_ZOwTKCk0/?igshid=ffffffffffff")
-            .map_err(|err| err.to_string())?;
+        let link = MediaLink::parse("https://www.instagram.com/p/CH5LLEGnhWDZpMs--h6rwCecLT3So9_ZOwTKCk0/?igshid=ffffffffffff")?;
         assert_eq!(
             link,
             MediaLink::Post {
@@ -212,10 +203,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_tv() -> Result<(), String> {
+    fn test_parse_tv() -> Result<(), Box<dyn error::Error>> {
         let link =
-            MediaLink::parse("https://www.instagram.com/tv/CJEivokDjPR/?igshid=ffffffffffff")
-                .map_err(|err| err.to_string())?;
+            MediaLink::parse("https://www.instagram.com/tv/CJEivokDjPR/?igshid=ffffffffffff")?;
         assert_eq!(
             link,
             MediaLink::IGTVVideo {
@@ -231,10 +221,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_reel() -> Result<(), String> {
+    fn test_parse_reel() -> Result<(), Box<dyn error::Error>> {
         let link =
-            MediaLink::parse("https://www.instagram.com/reel/CH-__hxDV7T/?igshid=ffffffffffff")
-                .map_err(|err| err.to_string())?;
+            MediaLink::parse("https://www.instagram.com/reel/CH-__hxDV7T/?igshid=ffffffffffff")?;
         assert_eq!(
             link,
             MediaLink::Reel {
@@ -250,10 +239,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_story() -> Result<(), String> {
+    fn test_parse_story() -> Result<(), Box<dyn error::Error>> {
         let link =
-            MediaLink::parse("https://instagram.com/stories/foo/1/?utm_source=ig_story_item_share&igshid=ffffffffffff")
-                .map_err(|err| err.to_string())?;
+            MediaLink::parse("https://instagram.com/stories/foo/1/?utm_source=ig_story_item_share&igshid=ffffffffffff")?;
         assert_eq!(
             link,
             MediaLink::Story {
@@ -267,8 +255,7 @@ mod tests {
         );
 
         let link =
-            MediaLink::parse("https://instagram.com/stories/foo/1?utm_source=ig_story_item_share&igshid=ffffffffffff")
-                .map_err(|err| err.to_string())?;
+            MediaLink::parse("https://instagram.com/stories/foo/1?utm_source=ig_story_item_share&igshid=ffffffffffff")?;
         assert_eq!(
             link,
             MediaLink::Story {
@@ -285,10 +272,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_story_highlight() -> Result<(), String> {
+    fn test_parse_story_highlight() -> Result<(), Box<dyn error::Error>> {
         let link =
-            MediaLink::parse("https://www.instagram.com/s/aGlnaGxpZ2h0OjE4MDY2MTI4ODAzMTg4MjY3/?igshid=ffffffffffff&story_media_id=1")
-                .map_err(|err| err.to_string())?;
+            MediaLink::parse("https://www.instagram.com/s/aGlnaGxpZ2h0OjE4MDY2MTI4ODAzMTg4MjY3/?igshid=ffffffffffff&story_media_id=1")?;
         assert_eq!(
             link,
             MediaLink::StoryHighlight {
@@ -302,8 +288,7 @@ mod tests {
         );
 
         let link =
-            MediaLink::parse("https://www.instagram.com/s/aGlnaGxpZ2h0OjE4MDY2MTI4ODAzMTg4MjY3?igshid=ffffffffffff&story_media_id=1")
-                .map_err(|err| err.to_string())?;
+            MediaLink::parse("https://www.instagram.com/s/aGlnaGxpZ2h0OjE4MDY2MTI4ODAzMTg4MjY3?igshid=ffffffffffff&story_media_id=1")?;
         assert_eq!(
             link,
             MediaLink::StoryHighlight {

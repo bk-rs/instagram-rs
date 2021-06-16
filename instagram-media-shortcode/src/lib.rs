@@ -71,6 +71,8 @@ pub fn private_shortcode_to_public_shortcode(shortcode: &str) -> String {
 mod tests {
     use super::*;
 
+    use std::error;
+
     use once_cell::sync::Lazy;
 
     const DATA: Lazy<Vec<(u64, &str)>> = Lazy::new(|| {
@@ -264,7 +266,7 @@ mod tests {
     });
 
     #[test]
-    fn test_ig_id_and_shortcode_converter() -> Result<(), String> {
+    fn test_ig_id_and_shortcode_converter() -> Result<(), Box<dyn error::Error>> {
         for (ig_id, shortcode) in DATA.iter() {
             assert_eq!(ig_id_to_shortcode(*ig_id), *shortcode);
 
@@ -307,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn test_is_private_shortcode() -> Result<(), String> {
+    fn test_is_private_shortcode() {
         for (_, shortcode) in DATA.iter() {
             assert_eq!(is_private_shortcode(*shortcode), false);
             assert_eq!(
@@ -327,12 +329,10 @@ mod tests {
             is_private_shortcode("Bfu-eHrgAXDlJ8ifgkj-lm4H6_UHy5GCAzsBU80"),
             true
         );
-
-        Ok(())
     }
 
     #[test]
-    fn test_private_shortcode_to_public_shortcode() -> Result<(), String> {
+    fn test_private_shortcode_to_public_shortcode() {
         for (_, shortcode) in DATA.iter() {
             assert_eq!(
                 private_shortcode_to_public_shortcode(*shortcode),
@@ -356,7 +356,5 @@ mod tests {
             private_shortcode_to_public_shortcode("Bfu-eHrgAXDlJ8ifgkj-lm4H6_UHy5GCAzsBU80"),
             "Bfu-eHrgAXD"
         );
-
-        Ok(())
     }
 }

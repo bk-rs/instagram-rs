@@ -1,5 +1,4 @@
 use std::char::from_digit;
-use std::fmt;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 use url::{ParseError, Url};
@@ -8,23 +7,16 @@ pub struct CdnUrl {
     pub oe_datetime: DateTime<Utc>,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(thiserror::Error, PartialEq, Debug)]
 pub enum CdnUrlParseError {
+    #[error("UrlParseError {0:?}")]
     UrlParseError(ParseError),
+    #[error("BadURLTimestamp")]
     BadURLTimestamp,
+    #[error("BadURLHash")]
     BadURLHash,
+    #[error("URLSignatureMismatch")]
     URLSignatureMismatch,
-}
-
-impl fmt::Display for CdnUrlParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::UrlParseError(err) => write!(f, "UrlParseError {}", err),
-            Self::BadURLTimestamp => write!(f, "BadURLTimestamp"),
-            Self::BadURLHash => write!(f, "BadURLHash"),
-            Self::URLSignatureMismatch => write!(f, "URLSignatureMismatch"),
-        }
-    }
 }
 
 impl CdnUrl {
@@ -94,10 +86,12 @@ fn to_str_radix(n: u32, r: u32) -> String {
 mod tests {
     use super::*;
 
+    use std::error;
+
     use chrono::{NaiveDate, NaiveTime};
 
     #[test]
-    fn test_oe_string_and_datetime_converter() -> Result<(), String> {
+    fn test_oe_string_and_datetime_converter() -> Result<(), Box<dyn error::Error>> {
         assert_eq!(
             oe_string_to_datetime("600DBA0C")?,
             DateTime::<Utc>::from_utc(
@@ -124,8 +118,8 @@ mod tests {
     }
 
     #[test]
-    fn test_parse() -> Result<(), String> {
-        let cdn_url = CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=n76LD7OkqcEAX_rFqpg&tp=1&oh=b68eb21889f4d6406bea1db175f16b3b&oe=600DBA0C").map_err(|err| err.to_string())?;
+    fn test_parse() -> Result<(), Box<dyn error::Error>> {
+        let cdn_url = CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=n76LD7OkqcEAX_rFqpg&tp=1&oh=b68eb21889f4d6406bea1db175f16b3b&oe=600DBA0C")?;
 
         if Utc::now()
             > DateTime::<Utc>::from_utc(
@@ -145,42 +139,34 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_when_missing_oe() -> Result<(), String> {
+    fn test_parse_when_missing_oe() {
         assert_eq!(
             CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=n76LD7OkqcEAX_rFqpg&tp=1&oh=b68eb21889f4d6406bea1db175f16b3b&oeFOO=600DBA0C").err(),
             Some(CdnUrlParseError::BadURLTimestamp)
         );
-
-        Ok(())
     }
 
     #[test]
-    fn test_parse_when_missing_oh() -> Result<(), String> {
+    fn test_parse_when_missing_oh() {
         assert_eq!(
             CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=n76LD7OkqcEAX_rFqpg&tp=1&ohFOO=b68eb21889f4d6406bea1db175f16b3b&oe=600DBA0C").err(),
             Some(CdnUrlParseError::BadURLHash)
         );
-
-        Ok(())
     }
 
     #[test]
-    fn test_parse_when_missing_nc_ohc() -> Result<(), String> {
+    fn test_parse_when_missing_nc_ohc() {
         assert_eq!(
             CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohcFOO=n76LD7OkqcEAX_rFqpg&tp=1&oh=b68eb21889f4d6406bea1db175f16b3b&oe=600DBA0C").err(),
             Some(CdnUrlParseError::URLSignatureMismatch)
         );
-
-        Ok(())
     }
 
     #[test]
-    fn test_parse_when_missing_nc_ht() -> Result<(), String> {
+    fn test_parse_when_missing_nc_ht() {
         assert_eq!(
             CdnUrl::parse( "https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/s150x150/14718046_215742295528430_4651559330867314688_a.jpg?_nc_htFOO=scontent-lax3-1.cdninstagram.com&_nc_ohc=n76LD7OkqcEAX_rFqpg&tp=1&oh=b68eb21889f4d6406bea1db175f16b3b&oe=600DBA0C").err(),
             Some(CdnUrlParseError::URLSignatureMismatch)
         );
-
-        Ok(())
     }
 }
