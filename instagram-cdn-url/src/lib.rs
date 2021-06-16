@@ -32,29 +32,29 @@ impl CdnUrl {
         let url = url.as_ref();
         let url = Url::parse(url).map_err(CdnUrlParseError::UrlParseError)?;
 
-        let pairs = &url.query_pairs();
+        let pairs = url.query_pairs();
 
         let (_, oe) = pairs
-            .filter(|(k, _)| k == "oe")
-            .next()
+            .clone()
+            .find(|(k, _)| k == "oe")
             .ok_or(CdnUrlParseError::BadURLTimestamp)?;
 
         let oe_datetime =
             oe_string_to_datetime(&oe).map_err(|_| CdnUrlParseError::BadURLTimestamp)?;
 
         pairs
-            .filter(|(k, _)| k == "oh")
-            .next()
+            .clone()
+            .find(|(k, _)| k == "oh")
             .ok_or(CdnUrlParseError::BadURLHash)?;
 
         pairs
-            .filter(|(k, _)| k == "_nc_ohc")
-            .next()
+            .clone()
+            .find(|(k, _)| k == "_nc_ohc")
             .ok_or(CdnUrlParseError::URLSignatureMismatch)?;
 
         pairs
-            .filter(|(k, _)| k == "_nc_ht")
-            .next()
+            .clone()
+            .find(|(k, _)| k == "_nc_ht")
             .ok_or(CdnUrlParseError::URLSignatureMismatch)?;
 
         Ok(Self { oe_datetime })
@@ -84,10 +84,10 @@ pub fn oe_datetime_to_string(oe_datetime: DateTime<Utc>) -> String {
 /// https://stackoverflow.com/questions/50277050/is-there-a-built-in-function-that-converts-a-number-to-a-string-in-any-base
 fn to_str_radix(n: u32, r: u32) -> String {
     let c = from_digit(n % r, r).unwrap_or('!');
-    return match n / r {
+    (match n / r {
         0 => String::new(),
         n => to_str_radix(n, r),
-    } + &String::from(c);
+    }) + &String::from(c)
 }
 
 #[cfg(test)]

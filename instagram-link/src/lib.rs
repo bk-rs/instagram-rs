@@ -84,11 +84,9 @@ impl MediaLink {
             }
             "stories" => {
                 s.remove(0);
-                let offset = s
-                    .find(|c: char| c == '/')
-                    .ok_or(MediaLinkParseError::Invalid(
-                        "owner_username not found".to_owned(),
-                    ))?;
+                let offset = s.find(|c: char| c == '/').ok_or_else(|| {
+                    MediaLinkParseError::Invalid("owner_username not found".to_owned())
+                })?;
                 let owner_username: String = s.drain(..offset).collect();
 
                 s.remove(0);
@@ -118,7 +116,7 @@ impl MediaLink {
 
                 let mut highlight_id: Option<u64> = None;
                 if let Ok(Ok(s)) = base64::decode(highlight_b64_encoded).map(String::from_utf8) {
-                    let mut split = s.split(":");
+                    let mut split = s.split(':');
                     if split.next() == Some("highlight") {
                         if let Some(Ok(id)) = split.next().map(|x| x.parse::<u64>()) {
                             highlight_id = Some(id);
@@ -128,9 +126,8 @@ impl MediaLink {
 
                 let (_, ig_id) = url
                     .query_pairs()
-                    .filter(|(k, _)| k == "story_media_id")
-                    .next()
-                    .ok_or(MediaLinkParseError::Invalid("ig_id not found".to_owned()))?;
+                    .find(|(k, _)| k == "story_media_id")
+                    .ok_or_else(|| MediaLinkParseError::Invalid("ig_id not found".to_owned()))?;
 
                 let ig_id: u64 = ig_id
                     .parse()

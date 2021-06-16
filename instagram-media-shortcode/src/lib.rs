@@ -11,7 +11,7 @@ pub fn ig_id_to_shortcode(ig_id: u64) -> String {
 
     let b64 = base64::encode_config(bytes, base64::STANDARD);
 
-    let s = String::from_utf8_lossy(&b64.as_bytes());
+    let s = String::from_utf8_lossy(b64.as_bytes());
 
     let mut s = s.replacen("+", "-", s.len()).replacen("/", "_", s.len());
 
@@ -26,7 +26,7 @@ pub fn shortcode_to_ig_id(shortcode: impl AsRef<str>) -> Result<u64, String> {
     let s = shortcode.as_ref();
     let s = private_shortcode_to_public_shortcode(s);
 
-    if s.len() == 0 {
+    if s.is_empty() {
         return Ok(0);
     }
     if s.len() > 11 {
