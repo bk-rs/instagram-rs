@@ -130,9 +130,9 @@ mod tests {
                 Utc,
             )
         {
-            assert_eq!(cdn_url.is_url_signature_expired(), true);
+            assert!(cdn_url.is_url_signature_expired());
         } else {
-            assert_eq!(cdn_url.is_url_signature_expired(), false);
+            assert!(!cdn_url.is_url_signature_expired());
         }
 
         Ok(())

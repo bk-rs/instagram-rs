@@ -75,7 +75,7 @@ mod tests {
 
     use once_cell::sync::Lazy;
 
-    const DATA: Lazy<Vec<(u64, &str)>> = Lazy::new(|| {
+    static DATA: Lazy<Vec<(u64, &str)>> = Lazy::new(|| {
         vec![
             // 4
             (1032176, "D7_w"),
@@ -311,24 +311,20 @@ mod tests {
     #[test]
     fn test_is_private_shortcode() {
         for (_, shortcode) in DATA.iter() {
-            assert_eq!(is_private_shortcode(*shortcode), false);
-            assert_eq!(
-                is_private_shortcode(
-                    format!(
-                        "{}{}",
-                        shortcode,
-                        String::from_utf8(vec![b'X'; 28]).unwrap()
-                    )
-                    .as_str()
-                ),
-                true
-            );
+            assert!(!is_private_shortcode(*shortcode));
+            assert!(is_private_shortcode(
+                format!(
+                    "{}{}",
+                    shortcode,
+                    String::from_utf8(vec![b'X'; 28]).unwrap()
+                )
+                .as_str()
+            ));
         }
 
-        assert_eq!(
-            is_private_shortcode("Bfu-eHrgAXDlJ8ifgkj-lm4H6_UHy5GCAzsBU80"),
-            true
-        );
+        assert!(is_private_shortcode(
+            "Bfu-eHrgAXDlJ8ifgkj-lm4H6_UHy5GCAzsBU80"
+        ));
     }
 
     #[test]
