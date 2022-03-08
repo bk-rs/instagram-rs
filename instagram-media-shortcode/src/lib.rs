@@ -13,7 +13,7 @@ pub fn ig_id_to_shortcode(ig_id: u64) -> String {
 
     let s = String::from_utf8_lossy(b64.as_bytes());
 
-    let mut s = s.replacen("+", "-", s.len()).replacen("/", "_", s.len());
+    let mut s = s.replacen('+', "-", s.len()).replacen('/', "_", s.len());
 
     if let Some(offset) = s.find(|c: char| c != 'A') {
         return s.drain(offset..).collect();
@@ -33,7 +33,7 @@ pub fn shortcode_to_ig_id(shortcode: impl AsRef<str>) -> Result<u64, String> {
         return Err("invalid".to_owned());
     }
 
-    let mut s = s.replacen("-", "+", s.len()).replacen("_", "/", s.len());
+    let mut s = s.replacen('-', "+", s.len()).replacen('_', "/", s.len());
 
     s = format!(
         "{}{}",
@@ -270,7 +270,7 @@ mod tests {
         for (ig_id, shortcode) in DATA.iter() {
             assert_eq!(ig_id_to_shortcode(*ig_id), *shortcode);
 
-            assert_eq!(shortcode_to_ig_id(shortcode.to_string())?, *ig_id);
+            assert_eq!(shortcode_to_ig_id(shortcode)?, *ig_id);
         }
 
         //

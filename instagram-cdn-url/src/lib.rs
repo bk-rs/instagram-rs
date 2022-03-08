@@ -1,22 +1,10 @@
-use std::char::from_digit;
+use core::{char::from_digit, fmt};
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 use url::{ParseError, Url};
 
 pub struct CdnUrl {
     pub oe_datetime: DateTime<Utc>,
-}
-
-#[derive(thiserror::Error, PartialEq, Debug)]
-pub enum CdnUrlParseError {
-    #[error("UrlParseError {0:?}")]
-    UrlParseError(ParseError),
-    #[error("BadURLTimestamp")]
-    BadURLTimestamp,
-    #[error("BadURLHash")]
-    BadURLHash,
-    #[error("URLSignatureMismatch")]
-    URLSignatureMismatch,
 }
 
 impl CdnUrl {
@@ -56,6 +44,23 @@ impl CdnUrl {
         self.oe_datetime < Utc::now()
     }
 }
+
+//
+#[derive(Debug, PartialEq)]
+pub enum CdnUrlParseError {
+    UrlParseError(ParseError),
+    BadURLTimestamp,
+    BadURLHash,
+    URLSignatureMismatch,
+}
+
+impl fmt::Display for CdnUrlParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for CdnUrlParseError {}
 
 /// Ref https://steveridout.github.io/mongo-object-time/
 pub fn oe_string_to_datetime(oe: impl AsRef<str>) -> Result<DateTime<Utc>, String> {

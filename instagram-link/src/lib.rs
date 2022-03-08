@@ -1,9 +1,12 @@
+use core::fmt;
+
 use url::{ParseError, Url};
 
 mod media_metadata;
 pub use media_metadata::MediaMetadata;
 
-#[derive(PartialEq, Debug)]
+//
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MediaLink {
     Post {
         metadata: MediaMetadata,
@@ -22,16 +25,6 @@ pub enum MediaLink {
     Reel {
         metadata: MediaMetadata,
     },
-}
-
-#[derive(thiserror::Error, PartialEq, Debug)]
-pub enum MediaLinkParseError {
-    #[error("UrlParseError {0:?}")]
-    UrlParseError(ParseError),
-    #[error("Invalid {0}")]
-    Invalid(String),
-    #[error("Unsupported")]
-    Unsupported,
 }
 
 impl MediaLink {
@@ -136,6 +129,23 @@ impl MediaLink {
     }
 }
 
+//
+#[derive(Debug, PartialEq)]
+pub enum MediaLinkParseError {
+    UrlParseError(ParseError),
+    Invalid(String),
+    Unsupported,
+}
+
+impl fmt::Display for MediaLinkParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for MediaLinkParseError {}
+
+//
 impl MediaLink {
     pub fn get_metadata(&self) -> &MediaMetadata {
         match self {
